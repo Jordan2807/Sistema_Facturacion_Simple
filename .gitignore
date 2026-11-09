@@ -1,0 +1,39 @@
+
+# ==========================================
+# ARCHIVOS DE CONFIGURACION PRIVADA
+# ==========================================
+
+.env
+.env.*
+!.env.example
+
+# Configuracion local de la base de datos
+/config/database.local.php
+
+# ==========================================
+# ARCHIVOS TEMPORALES Y REGISTROS
+# ==========================================
+
+*.log
+*.tmp
+*.bak
+
+# ==========================================
+# DEPENDENCIAS
+# ==========================================
+
+/vendor/
+
+# ==========================================
+# ARCHIVOS DEL SISTEMA OPERATIVO
+# ==========================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# CONFIGURACIONES DE EDITORES
+# ==========================================
+
+.idea/
