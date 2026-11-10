@@ -26,7 +26,7 @@ $nombreSistema = $nombreSistema ?? 'Sistema de Facturacion Sencilla';
 
         <p class="mb-0 footer-descripcion">
 
-            Sistema de administracion de la pulperia de Elena.
+            Sistema de administracion
 
         </p>
 

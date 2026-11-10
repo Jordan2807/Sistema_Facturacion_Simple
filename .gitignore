@@ -1,4 +1,3 @@
-
 # ==========================================
 # ARCHIVOS DE CONFIGURACION PRIVADA
 # ==========================================
@@ -37,3 +36,12 @@ desktop.ini
 # ==========================================
 
 .idea/
+
+# Solicitudes privadas de recuperacion
+/storage/*.json
+
+# ==========================================
+# INFORMACION PRIVADA DE USUARIOS
+# ==========================================
+
+/storage/solicitudes_recuperacion.json

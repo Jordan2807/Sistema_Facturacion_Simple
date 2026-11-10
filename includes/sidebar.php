@@ -24,6 +24,7 @@ $rolUsuario = $usuarioActual['rol'] ?? '';
 $menusPorRol = [
 
     // MENU DEL ADMINISTRADOR
+    
     'administrador' => [
 
         [
@@ -36,6 +37,24 @@ $menusPorRol = [
             'nombre' => 'Usuarios',
             'icono' => '👥',
             'ruta' => 'admin/usuarios.php'
+        ],
+
+        [
+            'nombre' => 'Crear usuario',
+            'icono' => '➕',
+            'ruta' => 'admin/crear_usuario.php'
+        ],
+
+        [
+            'nombre' => 'Solicitudes de recuperación',
+            'icono' => '🔔',
+            'ruta' => 'admin/solicitudes.php'
+        ],
+
+        [
+            'nombre' => 'Restablecer contraseñas',
+            'icono' => '🔐',
+            'ruta' => 'admin/restablecer_password.php'
         ],
 
         [
@@ -57,6 +76,7 @@ $menusPorRol = [
         ]
 
     ],
+
 
 
     // MENU DEL CAJERO

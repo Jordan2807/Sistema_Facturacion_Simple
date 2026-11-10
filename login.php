@@ -382,7 +382,18 @@ require_once __DIR__ . '/includes/header.php';
 
                         </div>
 
+                        <div class="text-end mb-4">
 
+                            <a
+                                href="<?= escapar(urlSistema('recuperar.php')) ?>"
+                                class="text-decoration-none"
+                                style="color: #145c46;"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </a>
+
+                        </div>
+                        
                         <!-- BOTON -->
 
                         <div class="d-grid">

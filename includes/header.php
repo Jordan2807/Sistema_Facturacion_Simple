@@ -8,12 +8,15 @@
  * bootstrap.php y functions.php
  */
 
+
 // Verificar que la configuracion general este cargada.
 if (!isset($appConfig) || !is_array($appConfig)) {
 
     $appConfig = require __DIR__ . '/../config/app.php';
 
 }
+
+require_once __DIR__ . '/csrf.php';
 
 // Obtener el nombre del sistema.
 $nombreSistema = $appConfig['nombre_sistema'];
@@ -46,6 +49,11 @@ $usuarioAutenticado = $usuarioActual !== null;
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     >
 
     <!-- Estilos generales -->
@@ -202,27 +210,53 @@ $usuarioAutenticado = $usuarioActual !== null;
 
                         </li>
 
-                    <?php else: ?>
+                    
+                        <?php else: ?>
 
-                        <!-- Informacion del usuario autenticado -->
+                            <!-- Informacion del usuario autenticado -->
 
-                        <li class="nav-item">
+                            <li class="nav-item d-flex flex-column flex-lg-row align-items-lg-center gap-3">
 
-                            <span class="usuario-navbar">
+                                <div class="usuario-navbar">
 
-                                <?= escapar($usuarioActual['nombre'] ?? 'Usuario') ?>
+                                    <span>
+                                        <?= escapar($usuarioActual['nombre'] ?? 'Usuario') ?>
+                                    </span>
 
-                                &nbsp;
+                                    <span class="badge-rol">
+                                        <?= escapar($usuarioActual['rol'] ?? 'usuario') ?>
+                                    </span>
 
-                                <span class="badge-rol">
-                                    <?= escapar($usuarioActual['rol'] ?? 'usuario') ?>
-                                </span>
+                                </div>
 
-                            </span>
 
-                        </li>
+                                <!-- FORMULARIO CERRAR SESION -->
 
-                    <?php endif; ?>
+                                <form
+                                    action="<?= escapar(urlSistema('includes/logout.php')) ?>"
+                                    method="POST"
+                                    class="m-0"
+                                >
+
+                                    <?= campoTokenCSRF() ?>
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-light btn-sm"
+                                    >
+
+                                        <i class="bi bi-box-arrow-right me-1"></i>
+
+                                        Cerrar sesión
+
+                                    </button>
+
+                                </form>
+
+                            </li>
+
+                        <?php endif; ?>
+
 
                 </ul>
 

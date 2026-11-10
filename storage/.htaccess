@@ -1,0 +1,15 @@
+# Deshabilitar la navegacion por directorios.
+Options -Indexes
+
+# Bloquear el acceso directo a todos los archivos
+# almacenados dentro de esta carpeta.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+# Compatibilidad con versiones anteriores de Apache.
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
