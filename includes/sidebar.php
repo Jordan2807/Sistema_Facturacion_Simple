@@ -25,6 +25,7 @@ $menusPorRol = [
 
     // MENU DEL ADMINISTRADOR
     
+    
     'administrador' => [
 
         [
@@ -32,6 +33,10 @@ $menusPorRol = [
             'icono' => '🏠',
             'ruta' => 'admin/index.php'
         ],
+
+        // ==================================
+        // ADMINISTRACION DE USUARIOS
+        // ==================================
 
         [
             'nombre' => 'Usuarios',
@@ -57,25 +62,70 @@ $menusPorRol = [
             'ruta' => 'admin/restablecer_password.php'
         ],
 
+        // ==================================
+        // ADMINISTRACION DE INVENTARIO
+        // ==================================
+
         [
-            'nombre' => 'Inventario',
+            'nombre' => 'Consultar inventario',
             'icono' => '📦',
             'ruta' => 'inventario/index.php'
         ],
 
         [
-            'nombre' => 'Movimientos',
+            'nombre' => 'Registrar producto',
+            'icono' => '➕',
+            'ruta' => 'inventario/crear_producto.php'
+        ],
+
+        [
+            'nombre' => 'Movimientos de inventario',
             'icono' => '🔄',
             'ruta' => 'inventario/movimientos.php'
         ],
 
         [
-            'nombre' => 'Ventas',
+            'nombre' => 'Registrar entrada',
+            'icono' => '📥',
+            'ruta' => 'inventario/entradas.php'
+        ],
+
+        [
+            'nombre' => 'Registrar salida',
+            'icono' => '📤',
+            'ruta' => 'inventario/salidas.php'
+        ],
+
+        [
+            'nombre' => 'Ajustar existencias',
+            'icono' => '⚖️',
+            'ruta' => 'inventario/ajustar_stock.php'
+        ],
+
+        [
+            'nombre' => 'Imprimir etiquetas',
+            'icono' => '🏷️',
+            'ruta' => 'inventario/imprimir_etiquetas.php'
+        ],
+
+        // ==================================
+        // ADMINISTRACION DE VENTAS
+        // ==================================
+
+        [
+            'nombre' => 'Registrar venta',
+            'icono' => '🛒',
+            'ruta' => 'caja/index.php'
+        ],
+
+        [
+            'nombre' => 'Historial de ventas',
             'icono' => '🧾',
             'ruta' => 'admin/ventas.php'
         ]
 
     ],
+
 
 
 
@@ -92,6 +142,12 @@ $menusPorRol = [
             'nombre' => 'Historial de ventas',
             'icono' => '📋',
             'ruta' => 'caja/historial.php'
+        ],
+
+        [
+            'nombre' => 'Imprimir etiquetas',
+            'icono' => '🏷️',
+            'ruta' => 'inventario/imprimir_etiquetas.php'
         ]
 
     ],
@@ -113,10 +169,35 @@ $menusPorRol = [
         ],
 
         [
+            'nombre' => 'Registrar entrada',
+            'icono' => '📥',
+            'ruta' => 'inventario/entradas.php'
+        ],
+
+        [
+            'nombre' => 'Registrar salida',
+            'icono' => '📤',
+            'ruta' => 'inventario/salidas.php'
+        ],
+
+        [
+            'nombre' => 'Ajustar existencias',
+            'icono' => '⚖️',
+            'ruta' => 'inventario/ajustar_stock.php'
+        ],
+
+        [
             'nombre' => 'Movimientos',
             'icono' => '🔄',
             'ruta' => 'inventario/movimientos.php'
+        ],
+
+        [
+            'nombre' => 'Imprimir etiquetas',
+            'icono' => '🏷️',
+            'ruta' => 'inventario/imprimir_etiquetas.php'
         ]
+        
 
     ]
 
