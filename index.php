@@ -168,7 +168,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <p>
                 Una herramienta diseñada para facilitar la administración
-                de la pulpería de Elena mediante el control de productos,
+                mediante el control de productos,
                 inventario y registro de ventas.
             </p>
 
