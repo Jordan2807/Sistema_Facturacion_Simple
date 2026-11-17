@@ -62,6 +62,12 @@ $menusPorRol = [
             'ruta' => 'admin/restablecer_password.php'
         ],
 
+        [
+            'nombre' => 'Solicitudes de anulación',
+            'icono' => '📋',
+            'ruta' => 'admin/solicitudes_anulacion.php'
+        ],
+
         // ==================================
         // ADMINISTRACION DE INVENTARIO
         // ==================================
@@ -121,7 +127,7 @@ $menusPorRol = [
         [
             'nombre' => 'Historial de ventas',
             'icono' => '🧾',
-            'ruta' => 'admin/ventas.php'
+            'ruta' => 'caja/ventas.php'
         ]
 
     ],
@@ -139,15 +145,21 @@ $menusPorRol = [
         ],
 
         [
-            'nombre' => 'Historial de ventas',
+            'nombre' => 'Mis ventas',
             'icono' => '📋',
-            'ruta' => 'caja/historial.php'
+            'ruta' => 'caja/ventas.php'
         ],
 
         [
             'nombre' => 'Imprimir etiquetas',
             'icono' => '🏷️',
             'ruta' => 'inventario/imprimir_etiquetas.php'
+        ],
+
+        [
+            'nombre' => 'Mis solicitudes de anulación',
+            'icono' => '📨',
+            'ruta' => 'caja/mis_solicitudes.php'
         ]
 
     ],

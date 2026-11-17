@@ -29,6 +29,92 @@ $errorCarga = false;
 $errorSolicitudes = false;
 
 
+/**
+ * Consultar solicitudes pendientes de anulación.
+ */
+$solicitudesAnulacionPendientes = 0;
+
+$rutaSolicitudesAnulacion = __DIR__
+    . '/../storage/solicitudes_anulacion.json';
+
+if (is_file($rutaSolicitudesAnulacion)) {
+
+    try {
+
+        $archivoSolicitudes = fopen(
+            $rutaSolicitudesAnulacion,
+            'rb'
+        );
+
+        if ($archivoSolicitudes === false) {
+            throw new RuntimeException(
+                'No se pudo abrir el archivo de solicitudes.'
+            );
+        }
+
+        try {
+
+            if (!flock($archivoSolicitudes, LOCK_SH)) {
+                throw new RuntimeException(
+                    'No se pudo bloquear el archivo de solicitudes.'
+                );
+            }
+
+            $contenidoSolicitudes = stream_get_contents(
+                $archivoSolicitudes
+            );
+
+            if ($contenidoSolicitudes === false) {
+                throw new RuntimeException(
+                    'No se pudo leer el archivo de solicitudes.'
+                );
+            }
+
+            $solicitudes = trim($contenidoSolicitudes) === ''
+                ? []
+                : json_decode(
+                    $contenidoSolicitudes,
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                );
+
+            if (!is_array($solicitudes)) {
+                throw new RuntimeException(
+                    'El archivo de solicitudes no tiene un formato válido.'
+                );
+            }
+
+            foreach ($solicitudes as $solicitud) {
+
+                if (
+                    is_array($solicitud)
+                    && ($solicitud['estado'] ?? '') === 'pendiente'
+                ) {
+                    $solicitudesAnulacionPendientes++;
+                }
+
+            }
+
+        } finally {
+
+            flock($archivoSolicitudes, LOCK_UN);
+            fclose($archivoSolicitudes);
+
+        }
+
+    } catch (Throwable $e) {
+
+        error_log(
+            'Error al cargar solicitudes pendientes en el panel: '
+            . $e->getMessage()
+        );
+
+    }
+
+}
+
+
 // ==========================================
 // 2. DEFINIR FECHAS DEL DIA
 // ==========================================
@@ -313,6 +399,7 @@ if (is_file($rutaSolicitudes)) {
     $totalSolicitudesPendientes = 0;
 
 }
+
 
 
 // ==========================================
@@ -834,8 +921,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 </div>
 
-
-                <!-- ACCESOS RAPIDOS -->
+                <!-- SOLICITUDES DE ANULACIÓN -->
 
                 <div class="col-12 col-lg-6">
 
@@ -843,60 +929,127 @@ require_once __DIR__ . '/../includes/header.php';
 
                         <div class="card-body p-4">
 
-                            <h5 class="fw-bold mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
 
-                                Accesos rapidos
+                                <div>
 
-                            </h5>
+                                    <h5 class="fw-bold mb-1">
+                                        Solicitudes de anulación
+                                    </h5>
 
+                                    <p class="text-muted mb-0 small">
+                                        Solicitudes que requieren revisión administrativa.
+                                    </p>
 
-                            <div class="d-flex flex-wrap gap-2">
+                                </div>
+
+                                <div style="font-size: 30px;">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </div>
+
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+
+                                <div>
+
+                                    <h2
+                                        class="fw-bold mb-0
+                                        <?= $solicitudesAnulacionPendientes > 0
+                                            ? 'text-warning'
+                                            : 'text-success' ?>"
+                                    >
+
+                                        <?= number_format($solicitudesAnulacionPendientes) ?>
+
+                                    </h2>
+
+                                    <small class="text-muted">
+                                        Solicitudes pendientes
+                                    </small>
+
+                                </div>
 
                                 <a
-                                    href="<?= escapar(urlSistema('admin/usuarios.php')) ?>"
+                                    href="<?= escapar(urlSistema('admin/solicitudes_anulacion.php')) ?>"
                                     class="btn btn-outline-success"
                                 >
 
-                                    <i class="bi bi-people me-1"></i>
+                                    Revisar solicitudes
 
-                                    Usuarios
+                                    <i class="bi bi-arrow-right ms-1"></i>
 
                                 </a>
 
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ACCESOS RAPIDOS -->
+
+                <div class="col-12">
+
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+
+                        <div class="card-body p-4">
+
+                            <h5 class="fw-bold mb-3">
+                                Accesos rápidos
+                            </h5>
+
+                            <div class="d-flex flex-wrap gap-2">
 
                                 <a
                                     href="<?= escapar(urlSistema('admin/crear_usuario.php')) ?>"
                                     class="btn btn-outline-success"
                                 >
-
                                     <i class="bi bi-person-plus me-1"></i>
-
                                     Crear usuario
-
                                 </a>
-
 
                                 <a
                                     href="<?= escapar(urlSistema('admin/restablecer_password.php')) ?>"
                                     class="btn btn-outline-success"
                                 >
-
                                     <i class="bi bi-key me-1"></i>
-
-                                    Restablecer contrasenas
-
+                                    Restablecer contraseñas
                                 </a>
 
+                                <a
+                                    href="<?= escapar(urlSistema('inventario/index.php')) ?>"
+                                    class="btn btn-outline-success"
+                                >
+                                    <i class="bi bi-box-seam me-1"></i>
+                                    Consultar inventario
+                                </a>
+
+                                <a
+                                    href="<?= escapar(urlSistema('inventario/movimientos.php')) ?>"
+                                    class="btn btn-outline-success"
+                                >
+                                    <i class="bi bi-clock-history me-1"></i>
+                                    Movimientos de inventario
+                                </a>
+
+                                <a
+                                    href="<?= escapar(urlSistema('caja/index.php')) ?>"
+                                    class="btn btn-outline-success"
+                                >
+                                    <i class="bi bi-cart-plus me-1"></i>
+                                    Registrar venta
+                                </a>
 
                                 <a
                                     href="<?= escapar(urlSistema('cuenta.php')) ?>"
                                     class="btn btn-outline-secondary"
                                 >
-
                                     <i class="bi bi-person-gear me-1"></i>
-
                                     Mi cuenta
-
                                 </a>
 
                             </div>
