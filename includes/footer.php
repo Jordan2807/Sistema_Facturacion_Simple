@@ -87,6 +87,16 @@ $nombreSistema = $nombreSistema ?? 'Sistema de Facturacion Sencilla';
 
 </style>
 
+<!-- ====================================== -->
+<!-- SISTEMA GLOBAL DE ALERTAS -->
+<!-- ====================================== -->
+
+<?php
+
+require_once __DIR__ . '/alerts.php';
+
+?>
+
 
 <!-- ====================================== -->
 <!-- JAVASCRIPT DE BOOTSTRAP -->
