@@ -281,7 +281,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Errores -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" id="erroresSalida">
 
                     <strong>No se pudo registrar la salida:</strong>
 
@@ -342,7 +342,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                             <div class="card-body">
 
-                                <form method="POST" action="">
+                                <form method="POST" action="" id="formSalidaInventario">
 
                                     <?= campoTokenCSRF() ?>
 
@@ -488,5 +488,160 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
 </div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formSalidaInventario');
+
+    const erroresSalida = document.getElementById('erroresSalida');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores de validación
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresSalida && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresSalida.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresSalida.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'No se pudo registrar la salida',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar salida de inventario
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let salidaConfirmada = false;
+
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (salidaConfirmada) {
+                return;
+            }
+
+            // Permitir envío normal como alternativa.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            // Evitar confirmaciones duplicadas.
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            confirmacionEnCurso = true;
+
+            Swal.fire({
+
+                icon: 'warning',
+
+                title: '¿Registrar esta salida?',
+
+                text: 'Las unidades indicadas se descontarán de las existencias actuales y el movimiento quedará guardado en el historial.',
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, registrar salida',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: '#dc3545',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                salidaConfirmada = true;
+
+                const botonGuardar = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonGuardar) {
+
+                    botonGuardar.disabled = true;
+
+                    botonGuardar.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Registrando salida...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    }
+
+});
+
+</script>
+
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

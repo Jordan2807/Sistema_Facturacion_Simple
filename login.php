@@ -29,7 +29,8 @@ $cantidadAdministradores = (int) $consultaAdmin->fetchColumn();
 
 if ($cantidadAdministradores === 0) {
 
-    redirigir('setup_admin.php');
+    header('Location: ' . urlSistema('setup_admin.php'));
+    exit;
 
 }
 
@@ -61,7 +62,8 @@ if ($usuarioActual !== null) {
 
     if (isset($rutasPorRol[$rolActual])) {
 
-        redirigir($rutasPorRol[$rolActual]);
+        header('Location: ' . urlSistema($rutasPorRol[$rolActual]));
+        exit;
 
     }
 
@@ -233,7 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $destino = $rutasPorRol[$usuario['rol']];
 
-                redirigir($destino);
+                header('Location: ' . urlSistema($destino));
+                exit;
 
             }
 

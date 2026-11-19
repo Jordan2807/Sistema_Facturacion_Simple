@@ -388,7 +388,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'El producto fue registrado correctamente.'
             );
 
-            redirigir('inventario/index.php');
+            header('Location: ' . urlSistema('inventario/index.php'));
+            exit;
 
 
         } catch (PDOException $e) {
@@ -534,23 +535,17 @@ require_once __DIR__ . '/../includes/header.php';
 
                             <?php if (!empty($errores)): ?>
 
-                                <div class="alert alert-danger">
+                                <div class="alert alert-danger" id="erroresProducto">
 
                                     <strong>
-
                                         No fue posible registrar el producto:
-
                                     </strong>
 
                                     <ul class="mb-0 mt-2">
 
                                         <?php foreach ($errores as $error): ?>
 
-                                            <li>
-
-                                                <?= escapar($error) ?>
-
-                                            </li>
+                                            <li><?= escapar($error) ?></li>
 
                                         <?php endforeach; ?>
 
@@ -563,7 +558,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                             <!-- FORMULARIO -->
 
-                            <form method="POST" action="">
+                            <form method="POST" action="" id="formCrearProducto">
 
                                 <?= campoTokenCSRF() ?>
 
@@ -915,81 +910,285 @@ document.addEventListener('DOMContentLoaded', function () {
     const campoCodigo = document.getElementById('codigo_barras');
     const resultado = document.getElementById('resultado_codigo');
 
-    if (!boton || !campoCodigo || !resultado) {
-        return;
+    const formulario = document.getElementById('formCrearProducto');
+    const erroresProducto = document.getElementById('erroresProducto');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Verificar disponibilidad de SweetAlert2
+    |--------------------------------------------------------------------------
+    */
+
+    function mostrarAlerta(tipo, titulo, mensaje) {
+
+        if (typeof Swal === 'undefined') {
+            return Promise.resolve();
+        }
+
+        return Swal.fire({
+            icon: tipo,
+            title: titulo,
+            text: mensaje,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#198754'
+        });
+
     }
 
-    boton.addEventListener('click', async function () {
+    function mostrarNotificacion(tipo, titulo, mensaje) {
 
-        const url = boton.dataset.url;
-        const tokenCSRF = document.querySelector(
-            'input[name="csrf_token"]'
-        );
-
-        if (!tokenCSRF) {
-            resultado.textContent = 'No se encontró el token de seguridad.';
-            resultado.className = 'small mt-1 text-danger';
+        if (typeof Swal === 'undefined') {
             return;
         }
 
-        boton.disabled = true;
-        resultado.textContent = 'Generando código...';
-        resultado.className = 'small mt-1 text-muted';
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: tipo,
+            title: titulo,
+            text: mensaje,
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true
+        });
 
-        const textoOriginal = boton.innerHTML;
+    }
 
-        boton.innerHTML =
-            '<span class="spinner-border spinner-border-sm"></span> Generando';
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores de validación
+    |--------------------------------------------------------------------------
+    */
 
-        try {
+    if (erroresProducto && typeof Swal !== 'undefined') {
 
-            const datos = new FormData();
+        const listaErrores = Array.from(
+            erroresProducto.querySelectorAll('li')
+        ).map(function (elemento) {
 
-            datos.append('csrf_token', tokenCSRF.value);
+            return elemento.textContent.trim();
 
-            const respuesta = await fetch(url, {
-                method: 'POST',
-                body: datos,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
+        }).filter(Boolean);
+
+        if (listaErrores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${listaErrores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresProducto.classList.add('d-none');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'No fue posible registrar el producto',
+                html: listaHTML,
+                confirmButtonText: 'Corregir datos',
+                confirmButtonColor: '#198754'
             });
-
-            const contenido = await respuesta.json();
-
-            if (!respuesta.ok || !contenido.success) {
-                throw new Error(
-                    contenido.message || 'No fue posible generar el código.'
-                );
-            }
-
-            campoCodigo.value = contenido.codigo;
-
-            resultado.textContent =
-                'Código generado correctamente: ' + contenido.codigo;
-
-            resultado.className = 'small mt-1 text-success';
-
-            campoCodigo.dispatchEvent(
-                new Event('input', { bubbles: true })
-            );
-
-        } catch (error) {
-
-            resultado.textContent =
-                error.message || 'Ocurrió un error inesperado.';
-
-            resultado.className = 'small mt-1 text-danger';
-
-        } finally {
-
-            boton.disabled = false;
-            boton.innerHTML = textoOriginal;
 
         }
 
-    });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generar código de barras
+    |--------------------------------------------------------------------------
+    */
+
+    if (boton && campoCodigo && resultado) {
+
+        boton.addEventListener('click', async function () {
+
+            const url = boton.dataset.url;
+
+            const tokenCSRF = document.querySelector(
+                'input[name="csrf_token"]'
+            );
+
+            if (!tokenCSRF) {
+
+                resultado.textContent =
+                    'No se encontró el token de seguridad.';
+
+                resultado.className = 'small mt-1 text-danger';
+
+                mostrarAlerta(
+                    'warning',
+                    'Problema de seguridad',
+                    'No se encontró el token de seguridad. Recarga la página e inténtalo nuevamente.'
+                );
+
+                return;
+
+            }
+
+            boton.disabled = true;
+
+            resultado.textContent = 'Generando código...';
+
+            resultado.className = 'small mt-1 text-muted';
+
+            const textoOriginal = boton.innerHTML;
+
+            boton.innerHTML =
+                '<span class="spinner-border spinner-border-sm"></span> Generando';
+
+            try {
+
+                const datos = new FormData();
+
+                datos.append('csrf_token', tokenCSRF.value);
+
+                const respuesta = await fetch(url, {
+                    method: 'POST',
+                    body: datos,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const contenido = await respuesta.json();
+
+                if (!respuesta.ok || !contenido.success) {
+
+                    throw new Error(
+                        contenido.message ||
+                        'No fue posible generar el código.'
+                    );
+
+                }
+
+                campoCodigo.value = contenido.codigo;
+
+                resultado.textContent =
+                    'Código generado correctamente: ' + contenido.codigo;
+
+                resultado.className = 'small mt-1 text-success';
+
+                campoCodigo.dispatchEvent(
+                    new Event('input', { bubbles: true })
+                );
+
+                mostrarNotificacion(
+                    'success',
+                    'Código generado',
+                    'El código ' + contenido.codigo + ' está listo para utilizarse.'
+                );
+
+            } catch (error) {
+
+                resultado.textContent =
+                    error.message || 'Ocurrió un error inesperado.';
+
+                resultado.className = 'small mt-1 text-danger';
+
+                mostrarAlerta(
+                    'error',
+                    'Error al generar el código',
+                    error.message || 'Ocurrió un error inesperado.'
+                );
+
+            } finally {
+
+                boton.disabled = false;
+
+                boton.innerHTML = textoOriginal;
+
+            }
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar registro del producto
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let registroConfirmado = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            // Permitir el envío después de confirmar.
+            if (registroConfirmado) {
+                return;
+            }
+
+            // Si SweetAlert2 no está disponible, permitir el envío normal.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            Swal.fire({
+
+                icon: 'question',
+
+                title: '¿Registrar este producto?',
+
+                text: 'Se guardará la información del producto y sus existencias iniciales en el inventario.',
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, registrar producto',
+
+                cancelButtonText: 'Revisar información',
+
+                confirmButtonColor: '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                registroConfirmado = true;
+
+                const botonRegistro = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonRegistro) {
+
+                    botonRegistro.disabled = true;
+
+                    botonRegistro.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Registrando...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    }
 
 });
 

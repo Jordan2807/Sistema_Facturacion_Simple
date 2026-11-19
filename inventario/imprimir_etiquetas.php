@@ -411,7 +411,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- ERRORES -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-danger no-imprimir">
+                <div class="alert alert-danger no-imprimir" id="erroresEtiquetas">
 
                     <strong>No se pudo completar la operación:</strong>
 
@@ -619,7 +619,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                     <?php else: ?>
 
-                        <form method="POST" action="">
+                        <form method="POST" action="" id="formPrepararEtiquetas">
 
                             <?= campoTokenCSRF() ?>
 
@@ -849,68 +849,463 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
 
-/**
- * Seleccionar o deseleccionar todos los productos.
- */
-document.getElementById('seleccionar_todos')?.addEventListener('change', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-    const seleccionados = document.querySelectorAll('.seleccionar-producto');
+    const formulario = document.getElementById('formPrepararEtiquetas');
 
-    seleccionados.forEach(function (checkbox) {
-        checkbox.checked = this.checked;
-    }, this);
+    const erroresEtiquetas = document.getElementById('erroresEtiquetas');
 
-});
+    const areaEtiquetas = document.getElementById('area-etiquetas');
 
-/**
- * Dibujar los códigos de barras.
- */
-document.querySelectorAll('.codigo-barras-svg').forEach(function (svg) {
+    const codigosBarras = document.querySelectorAll('.codigo-barras-svg');
 
-    if (typeof JsBarcode === 'undefined') {
-        console.error('No se pudo cargar la biblioteca de códigos de barras.');
-        return;
+    /*
+    |--------------------------------------------------------------------------
+    | Función general para mostrar alertas
+    |--------------------------------------------------------------------------
+    */
+
+    function mostrarAlerta(tipo, titulo, mensaje) {
+
+        if (typeof Swal !== 'undefined') {
+
+            return Swal.fire({
+
+                icon: tipo,
+
+                title: titulo,
+
+                text: mensaje,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+        console.error(titulo + ': ' + mensaje);
+
     }
 
-    try {
+    /*
+    |--------------------------------------------------------------------------
+    | Escapar texto para mostrarlo dentro de HTML
+    |--------------------------------------------------------------------------
+    */
 
-        JsBarcode(svg, svg.dataset.code, {
+    function escaparHTML(texto) {
 
-            format: 'CODE128',
-            lineColor: '#000000',
-            width: 1.5,
-            height: 42,
-            displayValue: false,
-            margin: 0
+        const elemento = document.createElement('div');
+
+        elemento.textContent = texto;
+
+        return elemento.innerHTML;
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores enviados por PHP
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresEtiquetas && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresEtiquetas.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresEtiquetas.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'No se pudo preparar las etiquetas',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Corregir selección',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Seleccionar o deseleccionar todos los productos
+    |--------------------------------------------------------------------------
+    */
+
+    const seleccionarTodos = document.getElementById('seleccionar_todos');
+
+    if (seleccionarTodos) {
+
+        seleccionarTodos.addEventListener('change', function () {
+
+            const seleccionados = document.querySelectorAll(
+                '.seleccionar-producto'
+            );
+
+            seleccionados.forEach(function (checkbox) {
+
+                checkbox.checked = seleccionarTodos.checked;
+
+            });
 
         });
 
-    } catch (error) {
+    }
 
-        console.error('No se pudo generar el código de barras:', error);
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar preparación de etiquetas
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let preparacionConfirmada = false;
+
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (preparacionConfirmada) {
+                return;
+            }
+
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            const productosSeleccionados = Array.from(
+                formulario.querySelectorAll('.seleccionar-producto:checked')
+            );
+
+            if (productosSeleccionados.length === 0) {
+
+                mostrarAlerta(
+                    'warning',
+                    'No hay productos seleccionados',
+                    'Selecciona al menos un producto para preparar sus etiquetas.'
+                );
+
+                return;
+
+            }
+
+            if (productosSeleccionados.length > 50) {
+
+                mostrarAlerta(
+                    'warning',
+                    'Demasiados productos',
+                    'Puedes seleccionar un máximo de 50 productos por impresión.'
+                );
+
+                return;
+
+            }
+
+            let totalEtiquetas = 0;
+
+            let cantidadInvalida = false;
+
+            /*
+             * Calcular la cantidad total de etiquetas.
+             */
+
+            productosSeleccionados.forEach(function (checkbox) {
+
+                const idProducto = checkbox.value;
+
+                const campoCantidad = Array.from(
+                    formulario.querySelectorAll('input[name^="cantidades["]')
+                ).find(function (campo) {
+
+                    return campo.name === 'cantidades[' + idProducto + ']';
+
+                });
+
+                const cantidad = campoCantidad
+                    ? Number(campoCantidad.value)
+                    : NaN;
+
+                if (
+                    !Number.isInteger(cantidad)
+                    || cantidad < 1
+                    || cantidad > 100
+                ) {
+
+                    cantidadInvalida = true;
+
+                    return;
+
+                }
+
+                totalEtiquetas += cantidad;
+
+            });
+
+            if (cantidadInvalida) {
+
+                mostrarAlerta(
+                    'warning',
+                    'Cantidad de etiquetas no válida',
+                    'Cada producto debe tener entre 1 y 100 etiquetas.'
+                );
+
+                return;
+
+            }
+
+            if (totalEtiquetas > 300) {
+
+                mostrarAlerta(
+                    'warning',
+                    'Se supera el límite de impresión',
+                    'Puedes preparar un máximo de 300 etiquetas por operación.'
+                );
+
+                return;
+
+            }
+
+            confirmacionEnCurso = true;
+
+            Swal.fire({
+
+                icon: 'question',
+
+                title: '¿Preparar las etiquetas?',
+
+                html: `
+                    <p>Vas a preparar etiquetas para:</p>
+
+                    <h4 class="text-success">
+                        ${productosSeleccionados.length} productos
+                    </h4>
+
+                    <p class="mb-1">Cantidad total de etiquetas:</p>
+
+                    <h3>${totalEtiquetas}</h3>
+
+                    <p class="text-muted mb-0">
+                        Se utilizarán los códigos de barras que ya están registrados.
+                    </p>
+                `,
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, preparar etiquetas',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                preparacionConfirmada = true;
+
+                const botonPreparar = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonPreparar) {
+
+                    botonPreparar.disabled = true;
+
+                    botonPreparar.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Preparando etiquetas...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
 
     }
 
-});
+    /*
+    |--------------------------------------------------------------------------
+    | Generar visualmente los códigos de barras
+    |--------------------------------------------------------------------------
+    */
 
-/**
- * Imprimir únicamente las etiquetas preparadas.
- */
-function imprimirEtiquetas() {
+    let huboErrorCodigo = false;
 
-    if (typeof JsBarcode === 'undefined') {
+    if (
+        codigosBarras.length > 0
+        && typeof JsBarcode === 'undefined'
+    ) {
 
-        alert(
-            'No se pudo cargar la biblioteca de códigos de barras. ' +
+        huboErrorCodigo = true;
+
+        mostrarAlerta(
+            'error',
+            'No se pudo cargar JsBarcode',
             'Comprueba tu conexión a Internet e intenta nuevamente.'
         );
 
-        return;
+    } else {
+
+        codigosBarras.forEach(function (svg) {
+
+            try {
+
+                JsBarcode(svg, svg.dataset.code, {
+
+                    format: 'CODE128',
+
+                    lineColor: '#000000',
+
+                    width: 1.5,
+
+                    height: 42,
+
+                    displayValue: false,
+
+                    margin: 0
+
+                });
+
+            } catch (error) {
+
+                huboErrorCodigo = true;
+
+                console.error(
+                    'No se pudo generar el código de barras:',
+                    error
+                );
+
+            }
+
+        });
+
     }
 
-    window.print();
+    /*
+    |--------------------------------------------------------------------------
+    | Notificar que las etiquetas están preparadas
+    |--------------------------------------------------------------------------
+    */
 
-}
+    if (
+        areaEtiquetas
+        && codigosBarras.length > 0
+        && !huboErrorCodigo
+        && typeof Swal !== 'undefined'
+    ) {
+
+        Swal.fire({
+
+            toast: true,
+
+            position: 'top-end',
+
+            icon: 'success',
+
+            title: codigosBarras.length + ' etiquetas preparadas correctamente',
+
+            showConfirmButton: false,
+
+            timer: 3000,
+
+            timerProgressBar: true
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Imprimir únicamente las etiquetas preparadas
+    |--------------------------------------------------------------------------
+    */
+
+    window.imprimirEtiquetas = function () {
+
+        if (
+            codigosBarras.length === 0
+            || typeof JsBarcode === 'undefined'
+        ) {
+
+            mostrarAlerta(
+                'error',
+                'No se pueden imprimir las etiquetas',
+                'No se encontraron códigos de barras preparados o la biblioteca no está disponible.'
+            );
+
+            return;
+
+        }
+
+        const codigosSinGenerar = Array.from(codigosBarras).some(
+            function (svg) {
+
+                return !svg.innerHTML.trim();
+
+            }
+        );
+
+        if (codigosSinGenerar) {
+
+            mostrarAlerta(
+                'error',
+                'Hay códigos de barras sin generar',
+                'No se puede continuar con la impresión. Comprueba los códigos de los productos.'
+            );
+
+            return;
+
+        }
+
+        // Abrir el diálogo de impresión del navegador.
+        window.print();
+
+    };
+
+});
 
 </script>
 

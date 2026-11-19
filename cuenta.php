@@ -79,7 +79,8 @@ if (
 
     session_destroy();
 
-    redirigir('login.php');
+    header('Location: ' . urlSistema('login.php'));
+    exit;
 
 }
 
@@ -255,7 +256,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'Tus datos personales fueron actualizados correctamente.'
                 );
 
-                redirigir('cuenta.php');
+                header('Location: ' . urlSistema('cuenta.php'));
+                exit;
 
             } catch (PDOException $e) {
 
@@ -450,7 +452,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'Tu contraseña fue actualizada correctamente.'
                 );
 
-                redirigir('cuenta.php');
+                header('Location: ' . urlSistema('cuenta.php'));
+                exit;
 
             } catch (Throwable $e) {
 

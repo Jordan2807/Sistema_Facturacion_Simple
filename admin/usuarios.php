@@ -15,12 +15,16 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Conexion PDO.
 /** @var PDO $pdo */
 
 // Verificar acceso administrativo.
 requerirRol('administrador');
+
+// Obtener información del administrador actual.
+$usuarioActual = obtenerUsuarioActual();
 
 $tituloPagina = 'Administracion de usuarios';
 
@@ -711,8 +715,7 @@ require_once __DIR__ . '/../includes/header.php';
                                         $idUsuarioTabla = (int) $usuario['id_usuario'];
 
                                         $esUsuarioActual = (
-                                            $idUsuarioTabla ===
-                                            (int) $usuarioActual['id_usuario']
+                                            $idUsuarioTabla === (int) ($usuarioActual['id_usuario'] ?? 0)
                                         );
 
                                         $activo = (int) $usuario['estado'] === 1;
@@ -846,13 +849,6 @@ require_once __DIR__ . '/../includes/header.php';
 
                                                 </a>
 
-                                                <?php if (!$esUsuarioActual): ?>
-
-                                                    <span class="text-muted small ms-1">
-                                                        Otra cuenta
-                                                    </span>
-
-                                                <?php endif; ?>
 
 
                                                 <!-- FORMULARIO PARA ACTIVAR O DESACTIVAR -->
@@ -862,10 +858,7 @@ require_once __DIR__ . '/../includes/header.php';
                                                     <form
                                                         action="<?= escapar(urlSistema('admin/cambiar_estado_usuario.php')) ?>"
                                                         method="POST"
-                                                        class="d-inline"
-                                                        onsubmit="return confirm(
-                                                            '¿Estás seguro de que deseas <?= $activo ? 'desactivar' : 'activar' ?> esta cuenta?'
-                                                        );"
+                                                        class="d-inline form-cambiar-estado-usuario"
                                                     >
 
                                                         <?= campoTokenCSRF() ?>
@@ -887,12 +880,11 @@ require_once __DIR__ . '/../includes/header.php';
                                                             <button
                                                                 type="submit"
                                                                 class="btn btn-outline-danger btn-sm"
+                                                                data-accion="desactivar"
+                                                                data-nombre="<?= escapar($usuario['nombre']) ?>"
                                                             >
-
                                                                 <i class="bi bi-person-x me-1"></i>
-
                                                                 Desactivar
-
                                                             </button>
 
                                                         <?php else: ?>
@@ -900,12 +892,11 @@ require_once __DIR__ . '/../includes/header.php';
                                                             <button
                                                                 type="submit"
                                                                 class="btn btn-outline-success btn-sm"
+                                                                data-accion="activar"
+                                                                data-nombre="<?= escapar($usuario['nombre']) ?>"
                                                             >
-
                                                                 <i class="bi bi-person-check me-1"></i>
-
                                                                 Activar
-
                                                             </button>
 
                                                         <?php endif; ?>
@@ -939,6 +930,105 @@ require_once __DIR__ . '/../includes/header.php';
 
 </div>
 
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formularios = document.querySelectorAll(
+        '.form-cambiar-estado-usuario'
+    );
+
+    formularios.forEach(function (formulario) {
+
+        let cambioConfirmado = false;
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (cambioConfirmado) {
+                return;
+            }
+
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            confirmacionEnCurso = true;
+
+            const boton = formulario.querySelector(
+                'button[type="submit"]'
+            );
+
+            const accion = boton.dataset.accion;
+            const nombre = boton.dataset.nombre;
+
+            const desactivar = accion === 'desactivar';
+
+            Swal.fire({
+
+                icon: desactivar ? 'warning' : 'question',
+
+                title: desactivar
+                    ? '¿Desactivar esta cuenta?'
+                    : '¿Activar esta cuenta?',
+
+                text: desactivar
+                    ? 'La cuenta de ' + nombre +
+                      ' perderá el acceso al sistema. Sus registros históricos se conservarán.'
+                    : 'La cuenta de ' + nombre +
+                      ' podrá volver a ingresar al sistema.',
+
+                showCancelButton: true,
+
+                confirmButtonText: desactivar
+                    ? 'Sí, desactivar'
+                    : 'Sí, activar',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: desactivar
+                    ? '#dc3545'
+                    : '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                cambioConfirmado = true;
+
+                boton.disabled = true;
+
+                boton.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...';
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    });
+
+});
+
+</script>
 
 <?php
 

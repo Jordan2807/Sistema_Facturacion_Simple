@@ -61,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'Los datos de la solicitud no son validos.'
         );
 
-        redirigir('admin/solicitudes.php');
+        header('Location: ' . urlSistema('admin/solicitudes.php'));
+        exit;
 
     }
 
@@ -74,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'No fue posible acceder al almacenamiento de solicitudes.'
         );
 
-        redirigir('admin/solicitudes.php');
+        header('Location: ' . urlSistema('admin/solicitudes.php'));
+        exit;
 
     }
 
@@ -269,7 +271,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     }
 
-    redirigir('admin/solicitudes.php');
+    header('Location: ' . urlSistema('admin/solicitudes.php'));
+    exit;
 
 }
 

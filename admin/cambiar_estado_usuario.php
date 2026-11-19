@@ -86,7 +86,8 @@ if (
         'Los datos enviados no son validos.'
     );
 
-    redirigir('admin/usuarios.php');
+    header('Location: ' . urlSistema('admin/usuarios.php'));
+    exit;
 
 }
 
@@ -365,5 +366,6 @@ establecerMensaje(
 // 9. REGRESAR AL LISTADO
 // ==========================================
 
-redirigir('admin/usuarios.php');
+header('Location: ' . urlSistema('admin/usuarios.php'));
+exit;
 

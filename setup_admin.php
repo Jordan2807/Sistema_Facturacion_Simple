@@ -26,7 +26,8 @@ $cantidadAdministradores = (int) $consultaAdmin->fetchColumn();
 // Si existe un administrador, salir inmediatamente.
 if ($cantidadAdministradores > 0) {
 
-    redirigir('login.php');
+    header('Location: ' . urlSistema('login.php'));
+    exit;
 
 }
 
@@ -436,7 +437,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($setupBloqueado) {
 
-                redirigir('login.php');
+                header('Location: ' . urlSistema('login.php'));
+                exit;
 
             }
 

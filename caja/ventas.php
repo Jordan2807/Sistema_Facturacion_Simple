@@ -562,14 +562,16 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- ERRORES DE FILTROS -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-warning">
+                <div class="alert alert-warning" id="erroresFiltrosVentas">
 
                     <strong>Revisa los filtros:</strong>
 
                     <ul class="mb-0 mt-2">
 
                         <?php foreach ($errores as $error): ?>
+
                             <li><?= escapar($error) ?></li>
+
                         <?php endforeach; ?>
 
                     </ul>
@@ -592,7 +594,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div class="card-body">
 
-                    <form method="GET" action="">
+                    <form method="GET" action="" id="formFiltrosVentas">
 
                         <div class="row g-3">
 
@@ -1174,7 +1176,138 @@ require_once __DIR__ . '/../includes/header.php';
 <?php
 
 require_once __DIR__ . '/../includes/alerts.php';
+?>
 
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formFiltrosVentas');
+
+    const erroresFiltros = document.getElementById('erroresFiltrosVentas');
+
+    const campoFechaInicio = document.getElementById('fecha_inicio');
+
+    const campoFechaFin = document.getElementById('fecha_fin');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores enviados por PHP
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresFiltros && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresFiltros.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresFiltros.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'warning',
+
+                title: 'Revisa los filtros',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validar el rango de fechas antes de buscar
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        formulario.addEventListener('submit', function (evento) {
+
+            const fechaInicio = campoFechaInicio.value;
+
+            const fechaFin = campoFechaFin.value;
+
+            if (
+                fechaInicio !== ''
+                && fechaFin !== ''
+                && fechaInicio > fechaFin
+            ) {
+
+                evento.preventDefault();
+
+                if (typeof Swal !== 'undefined') {
+
+                    Swal.fire({
+
+                        icon: 'warning',
+
+                        title: 'Rango de fechas incorrecto',
+
+                        text: 'La fecha inicial no puede ser posterior a la fecha final.',
+
+                        confirmButtonText: 'Corregir fechas',
+
+                        confirmButtonColor: '#198754'
+
+                    }).then(function () {
+
+                        campoFechaInicio.focus();
+
+                    });
+
+                } else {
+
+                    alert(
+                        'La fecha inicial no puede ser posterior a la fecha final.'
+                    );
+
+                }
+
+            }
+
+        });
+
+    }
+
+});
+
+</script>
+
+
+<?php
 require_once __DIR__ . '/../includes/footer.php';
-
 ?>

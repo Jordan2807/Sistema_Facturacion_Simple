@@ -301,7 +301,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Errores -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" id="erroresAjuste">
 
                     <strong>No se pudo realizar el ajuste:</strong>
 
@@ -358,7 +358,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                             <div class="card-body">
 
-                                <form method="POST" action="">
+                                <form method="POST" action="" id="formAjustarStock">
 
                                     <?= campoTokenCSRF() ?>
 
@@ -516,5 +516,186 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
 </div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formAjustarStock');
+
+    const erroresAjuste = document.getElementById('erroresAjuste');
+
+    const campoProducto = document.getElementById('id_producto');
+
+    const campoStockFisico = document.getElementById('stock_fisico');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores de validación
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresAjuste && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresAjuste.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresAjuste.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'No se pudo realizar el ajuste',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar ajuste de existencias
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let ajusteConfirmado = false;
+
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (ajusteConfirmado) {
+                return;
+            }
+
+            // Permitir el envío normal si SweetAlert2 no está disponible.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            // Evitar confirmaciones duplicadas.
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            confirmacionEnCurso = true;
+
+            const opcionProducto =
+                campoProducto.options[campoProducto.selectedIndex];
+
+            const nombreProducto = opcionProducto
+                ? opcionProducto.textContent.trim()
+                : 'Producto seleccionado';
+
+            const cantidadFisica = campoStockFisico.value;
+
+            Swal.fire({
+
+                icon: 'warning',
+
+                title: '¿Aplicar este ajuste?',
+
+                html: `
+                    <p>Vas a actualizar las existencias del siguiente producto:</p>
+
+                    <p><strong>${nombreProducto}</strong></p>
+
+                    <p>Cantidad física indicada:</p>
+
+                    <h3 class="text-success">${cantidadFisica} unidades</h3>
+
+                    <p class="text-danger mb-0">
+                        Esta operación sustituirá las existencias actuales por
+                        la cantidad física indicada.
+                    </p>
+                `,
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, aplicar ajuste',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                ajusteConfirmado = true;
+
+                const botonGuardar = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonGuardar) {
+
+                    botonGuardar.disabled = true;
+
+                    botonGuardar.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Aplicando ajuste...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    }
+
+});
+
+</script>
+
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

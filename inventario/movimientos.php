@@ -301,14 +301,20 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Errores de filtros -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-warning">
+                <div class="alert alert-warning" id="erroresFiltrosMovimientos">
+
                     <strong>Revisa los filtros:</strong>
 
                     <ul class="mb-0 mt-2">
+
                         <?php foreach ($errores as $error): ?>
+
                             <li><?= escapar($error) ?></li>
+
                         <?php endforeach; ?>
+
                     </ul>
+
                 </div>
 
             <?php endif; ?>
@@ -325,7 +331,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div class="card-body">
 
-                    <form method="GET" action="">
+                    <form method="GET" action="" id="formFiltrosMovimientos">
 
                         <div class="row g-3">
 
@@ -654,5 +660,149 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
 </div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formFiltrosMovimientos');
+
+    const erroresFiltros = document.getElementById(
+        'erroresFiltrosMovimientos'
+    );
+
+    const campoFechaInicio = document.getElementById('fecha_inicio');
+
+    const campoFechaFin = document.getElementById('fecha_fin');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Función para mostrar alertas
+    |--------------------------------------------------------------------------
+    */
+
+    function mostrarAlerta(tipo, titulo, mensaje) {
+
+        if (typeof Swal !== 'undefined') {
+
+            return Swal.fire({
+
+                icon: tipo,
+
+                title: titulo,
+
+                text: mensaje,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+        console.error(titulo + ': ' + mensaje);
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores enviados por PHP
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresFiltros && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresFiltros.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresFiltros.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'warning',
+
+                title: 'Revisa los filtros',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validar el rango de fechas antes de buscar
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        formulario.addEventListener('submit', function (evento) {
+
+            const fechaInicio = campoFechaInicio.value;
+
+            const fechaFin = campoFechaFin.value;
+
+            if (
+                fechaInicio !== ''
+                && fechaFin !== ''
+                && fechaInicio > fechaFin
+            ) {
+
+                evento.preventDefault();
+
+                mostrarAlerta(
+                    'warning',
+                    'Rango de fechas incorrecto',
+                    'La fecha inicial no puede ser posterior a la fecha final.'
+                ).then(function () {
+
+                    campoFechaInicio.focus();
+
+                });
+
+            }
+
+        });
+
+    }
+
+});
+
+</script>
+
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

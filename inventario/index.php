@@ -11,6 +11,7 @@
 // 1. CARGAR ARCHIVOS NECESARIOS
 // ==========================================
 
+require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/bootstrap.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/helpers.php';
@@ -20,6 +21,13 @@ require_once __DIR__ . '/../includes/auth.php';
 
 // Permitir acceso a administradores y almacen.
 requerirRol('administrador', 'almacen');
+
+// Identificar si el usuario puede activar y desactivar productos.
+$usuarioActual = obtenerUsuarioActual();
+
+$esAdministrador = (
+    ($usuarioActual['rol'] ?? '') === 'administrador'
+);
 
 $tituloPagina = 'Inventario';
 
@@ -993,6 +1001,8 @@ require_once __DIR__ . '/../includes/header.php';
 
                                         <th>Estado</th>
 
+                                        <th class="text-end">Acciones</th>
+
                                     </tr>
 
                                 </thead>
@@ -1139,16 +1149,117 @@ require_once __DIR__ . '/../includes/header.php';
 
                                             </td>
 
-                                            <!-- EDITAR -->
+                                           <!-- ACCIONES -->
                                             <td class="text-end">
-                                                <a
-                                                    href="<?= escapar(urlSistema('inventario/editar_producto.php?id=' . (int) $producto['id_producto'])) ?>"
-                                                    class="btn btn-sm btn-outline-success"
-                                                    title="Editar producto"
-                                                >
-                                                    <i class="bi bi-pencil"></i>
-                                                    Editar
-                                                </a>
+
+                                                <?php
+                                                $productoActivo = (int) $producto['estado'] === 1;
+
+                                                $nuevoEstado = $productoActivo ? 0 : 1;
+
+                                                $accionEstado = $productoActivo
+                                                    ? 'desactivar'
+                                                    : 'reactivar';
+                                                ?>
+
+                                                <div class="d-flex justify-content-end flex-wrap gap-2">
+
+                                                    <!-- EDITAR -->
+                                                    <a
+                                                        href="<?= escapar(urlSistema('inventario/editar_producto.php?id=' . (int) $producto['id_producto'])) ?>"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        title="Editar producto"
+                                                    >
+                                                        <i class="bi bi-pencil"></i>
+                                                        Editar
+                                                    </a>
+
+                                                    <?php if ($esAdministrador): ?>
+
+                                                        <!-- ACTIVAR / DESACTIVAR -->
+                                                        <form
+                                                            method="POST"
+                                                            action="<?= escapar(urlSistema('inventario/cambiar_estado_producto.php')) ?>"
+                                                            class="form-cambiar-estado-producto"
+                                                        >
+
+                                                            <?= campoTokenCSRF() ?>
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="id_producto"
+                                                                value="<?= (int) $producto['id_producto'] ?>"
+                                                            >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="nuevo_estado"
+                                                                value="<?= $nuevoEstado ?>"
+                                                            >
+
+                                                            <!-- Conservar filtros de búsqueda -->
+                                                            <input
+                                                                type="hidden"
+                                                                name="buscar"
+                                                                value="<?= escapar($buscar) ?>"
+                                                            >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="categoria"
+                                                                value="<?= escapar($categoriaFiltro) ?>"
+                                                            >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="estado"
+                                                                value="<?= escapar($estadoFiltro) ?>"
+                                                            >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="stock"
+                                                                value="<?= escapar($stockFiltro) ?>"
+                                                            >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="pagina"
+                                                                value="<?= $pagina ?>"
+                                                            >
+
+                                                            <?php if ($productoActivo): ?>
+
+                                                                <button
+                                                                    type="submit"
+                                                                    class="btn btn-sm btn-outline-danger"
+                                                                    data-accion="desactivar"
+                                                                    data-producto="<?= escapar($producto['nombre']) ?>"
+                                                                >
+                                                                    <i class="bi bi-toggle-off"></i>
+                                                                    Desactivar
+                                                                </button>
+
+                                                            <?php else: ?>
+
+                                                                <button
+                                                                    type="submit"
+                                                                    class="btn btn-sm btn-outline-success"
+                                                                    data-accion="reactivar"
+                                                                    data-producto="<?= escapar($producto['nombre']) ?>"
+                                                                >
+                                                                    <i class="bi bi-toggle-on"></i>
+                                                                    Reactivar
+                                                                </button>
+
+                                                            <?php endif; ?>
+
+                                                        </form>
+
+                                                    <?php endif; ?>
+
+                                                </div>
+
                                             </td>
 
 
@@ -1327,12 +1438,113 @@ require_once __DIR__ . '/../includes/header.php';
 </style>
 
 
-<?php
 
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formularios = document.querySelectorAll(
+        '.form-cambiar-estado-producto'
+    );
+
+    formularios.forEach(function (formulario) {
+
+        let cambioConfirmado = false;
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (cambioConfirmado) {
+                return;
+            }
+
+            // Si SweetAlert2 no está disponible, permitir envío normal.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            confirmacionEnCurso = true;
+
+            const boton = formulario.querySelector('button[type="submit"]');
+
+            const accion = boton.dataset.accion;
+
+            const nombreProducto = boton.dataset.producto;
+
+            const desactivar = accion === 'desactivar';
+
+            Swal.fire({
+
+                icon: desactivar ? 'warning' : 'question',
+
+                title: desactivar
+                    ? '¿Desactivar este producto?'
+                    : '¿Reactivar este producto?',
+
+                text: desactivar
+                    ? 'El producto "' + nombreProducto + '" dejará de estar disponible para nuevas ventas y movimientos. Su historial se conservará.'
+                    : 'El producto "' + nombreProducto + '" volverá a estar disponible para las operaciones del sistema.',
+
+                showCancelButton: true,
+
+                confirmButtonText: desactivar
+                    ? 'Sí, desactivar'
+                    : 'Sí, reactivar',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: desactivar
+                    ? '#dc3545'
+                    : '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                cambioConfirmado = true;
+
+                boton.disabled = true;
+
+                boton.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...';
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    });
+
+});
+
+</script>
+
+
+
+
+
+
+<?php
 // ==========================================
 // 8. CARGAR PIE DE PAGINA
 // ==========================================
-
 require_once __DIR__ . '/../includes/footer.php';
 
 ?>

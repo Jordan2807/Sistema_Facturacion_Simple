@@ -1313,6 +1313,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Alertas SweetAlert2 para caja
+    |--------------------------------------------------------------------------
+    */
+
+    function mostrarAlertaCaja(tipo, titulo, mensaje) {
+
+        return Swal.fire({
+
+            icon: tipo,
+
+            title: titulo,
+
+            text: mensaje,
+
+            confirmButtonText: 'Entendido',
+
+            confirmButtonColor: '#198754',
+
+            allowOutsideClick: false
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Calcular el total actual
     |--------------------------------------------------------------------------
     */
@@ -1567,7 +1593,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         || nuevaCantidad > item.stock
                     ) {
 
-                        alert(
+                        mostrarAlertaCaja(
+                            'warning',
+                            'Cantidad no válida',
                             'La cantidad debe estar entre 1 y '
                             + item.stock
                             + ' unidades.'
@@ -1740,7 +1768,13 @@ botonesAgregar.forEach(function (boton) {
         });
 
         if (!resultado.success) {
-            alert(resultado.message);
+
+            mostrarAlertaCaja(
+                'warning',
+                'No se pudo agregar el producto',
+                resultado.message
+            );
+
         }
 
     });
@@ -1924,13 +1958,17 @@ formulario.addEventListener('submit', function (evento) {
     // Detener el envío hasta que confirme.
     evento.preventDefault();
 
-    if (carrito.size === 0) {
+  if (carrito.size === 0) {
 
-        alert('Debes agregar al menos un producto al carrito.');
+    mostrarAlertaCaja(
+        'warning',
+        'Carrito vacío',
+        'Debes agregar al menos un producto antes de registrar la venta.'
+    );
 
-        return;
+    return;
 
-    }
+}
 
     let subtotalActual = 0;
 
@@ -1948,9 +1986,15 @@ formulario.addEventListener('submit', function (evento) {
         || descuentoActual > subtotalActual
     ) {
 
-        alert('El descuento ingresado no es válido.');
+        mostrarAlertaCaja(
+            'warning',
+            'Descuento no válido',
+            'El descuento debe ser un monto válido y no puede superar el subtotal de la venta.'
+        ).then(function () {
 
-        campoDescuento.focus();
+            campoDescuento.focus();
+
+        });
 
         return;
 

@@ -268,7 +268,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'El usuario fue registrado correctamente.'
             );
 
-            redirigir('admin/usuarios.php');
+            header('Location: ' . urlSistema('admin/usuarios.php'));
+            exit;
 
 
         } catch (PDOException $e) {

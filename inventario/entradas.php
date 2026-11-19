@@ -250,7 +250,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Errores -->
             <?php if (!empty($errores)): ?>
 
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" id="erroresEntrada">
 
                     <strong>No se pudo registrar la entrada:</strong>
 
@@ -312,7 +312,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                             <div class="card-body">
 
-                                <form method="POST" action="">
+                                <form method="POST" action="" id="formEntradaInventario">
 
                                     <?= campoTokenCSRF() ?>
 
@@ -459,5 +459,160 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
 </div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formEntradaInventario');
+
+    const erroresEntrada = document.getElementById('erroresEntrada');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores de validación
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresEntrada && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresEntrada.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresEntrada.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'No se pudo registrar la entrada',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Entendido',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar registro de entrada
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let registroConfirmado = false;
+
+        let confirmacionEnCurso = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            if (registroConfirmado) {
+                return;
+            }
+
+            // Permitir el envío normal si SweetAlert2 no está disponible.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            // Evitar abrir varias confirmaciones simultáneamente.
+            if (confirmacionEnCurso) {
+                return;
+            }
+
+            confirmacionEnCurso = true;
+
+            Swal.fire({
+
+                icon: 'question',
+
+                title: '¿Registrar esta entrada?',
+
+                text: 'Las unidades indicadas se sumarán a las existencias actuales y se guardará el movimiento en el historial.',
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, registrar entrada',
+
+                cancelButtonText: 'Cancelar',
+
+                confirmButtonColor: '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                confirmacionEnCurso = false;
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                registroConfirmado = true;
+
+                const botonGuardar = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonGuardar) {
+
+                    botonGuardar.disabled = true;
+
+                    botonGuardar.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Registrando entrada...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    }
+
+});
+
+</script>
+
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

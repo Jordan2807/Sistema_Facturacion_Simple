@@ -58,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'El identificador de la solicitud no es valido.'
         );
 
-        redirigir('admin/restablecer_password.php');
+        header('Location: ' . urlSistema('admin/restablecer_password.php'));
+        exit;
 
     }
 
@@ -72,7 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'No fue posible acceder al almacenamiento de solicitudes.'
         );
 
-        redirigir('admin/restablecer_password.php');
+        header('Location: ' . urlSistema('admin/restablecer_password.php'));
+        exit;
 
     }
 
@@ -429,11 +431,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($restablecimientoExitoso) {
 
-        redirigir('admin/restablecer_password.php');
+        header('Location: ' . urlSistema('admin/restablecer_password.php'));
+        exit;
 
     }
 
-    redirigir('admin/restablecer_password.php');
+    header('Location: ' . urlSistema('admin/restablecer_password.php'));
+    exit;
 
 }
 

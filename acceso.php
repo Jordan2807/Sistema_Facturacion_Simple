@@ -40,14 +40,16 @@ try {
         // Ya existe un administrador.
         // Enviar al formulario de inicio de sesion.
 
-        redirigir('login.php');
+        header('Location: ' . urlSistema('login.php'));
+        exit;
 
     } else {
 
         // No existe ningun administrador.
         // Enviar a la configuracion inicial.
 
-        redirigir('setup_admin.php');
+        header('Location: ' . urlSistema('setup_admin.php'));
+        exit;
 
     }
 

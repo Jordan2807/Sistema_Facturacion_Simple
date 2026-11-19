@@ -26,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($idProducto <= 0) {
     establecerMensaje('warning', 'El producto seleccionado no es válido.');
-    redirigir(urlSistema('inventario/index.php'));
+    header('Location: ' . urlSistema('inventario/index.php'));
+    exit;
 }
 
 /**
@@ -47,7 +48,8 @@ $producto = $stmtProducto->fetch(PDO::FETCH_ASSOC);
 
 if (!$producto) {
     establecerMensaje('warning', 'El producto solicitado no existe.');
-    redirigir(urlSistema('inventario/index.php'));
+    header('Location: ' . urlSistema('inventario/index.php'));
+    exit;
 }
 
 /**
@@ -67,10 +69,7 @@ $errores = [];
  */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (!verificarTokenCSRF()) {
-        http_response_code(403);
-        exit('La solicitud no es válida. Recarga la página e inténtalo nuevamente.');
-    }
+    verificarTokenCSRF();
 
     $codigoBarras = trim($_POST['codigo_barras'] ?? '');
     $nombre = trim($_POST['nombre'] ?? '');
@@ -186,7 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
 
             establecerMensaje('success', 'Los datos del producto se actualizaron correctamente.');
-            redirigir(urlSistema('inventario/index.php'));
+            header('Location: ' . urlSistema('inventario/index.php'));
+            exit;
 
         } catch (PDOException $e) {
 
@@ -235,15 +235,23 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <?php if (!empty($errores)): ?>
-                <div class="alert alert-danger">
+
+                <div class="alert alert-danger" id="erroresEdicionProducto">
+
                     <strong>No se pudieron guardar los cambios:</strong>
 
                     <ul class="mb-0 mt-2">
+
                         <?php foreach ($errores as $error): ?>
+
                             <li><?= escapar($error) ?></li>
+
                         <?php endforeach; ?>
+
                     </ul>
+
                 </div>
+
             <?php endif; ?>
 
             <div class="card shadow-sm border-0">
@@ -255,7 +263,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div class="card-body">
 
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="formEditarProducto">
 
                         <?= campoTokenCSRF() ?>
 
@@ -421,5 +429,148 @@ require_once __DIR__ . '/../includes/header.php';
         </main>
     </div>
 </div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formEditarProducto');
+
+    const erroresProducto = document.getElementById('erroresEdicionProducto');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mostrar errores de validación
+    |--------------------------------------------------------------------------
+    */
+
+    if (erroresProducto && typeof Swal !== 'undefined') {
+
+        const errores = Array.from(
+            erroresProducto.querySelectorAll('li')
+        ).map(function (elemento) {
+
+            return elemento.textContent.trim();
+
+        }).filter(Boolean);
+
+        if (errores.length > 0) {
+
+            const escaparHTML = function (texto) {
+
+                const elemento = document.createElement('div');
+
+                elemento.textContent = texto;
+
+                return elemento.innerHTML;
+
+            };
+
+            const listaHTML = `
+                <ul class="text-start mb-0">
+                    ${errores.map(function (error) {
+                        return '<li>' + escaparHTML(error) + '</li>';
+                    }).join('')}
+                </ul>
+            `;
+
+            erroresProducto.classList.add('d-none');
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'No se pudieron guardar los cambios',
+
+                html: listaHTML,
+
+                confirmButtonText: 'Corregir datos',
+
+                confirmButtonColor: '#198754'
+
+            });
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmar actualización del producto
+    |--------------------------------------------------------------------------
+    */
+
+    if (formulario) {
+
+        let cambiosConfirmados = false;
+
+        formulario.addEventListener('submit', function (evento) {
+
+            // Permitir el envío después de confirmar.
+            if (cambiosConfirmados) {
+                return;
+            }
+
+            // Si SweetAlert2 no está disponible, permitir el envío normal.
+            if (typeof Swal === 'undefined') {
+                return;
+            }
+
+            evento.preventDefault();
+
+            Swal.fire({
+
+                icon: 'question',
+
+                title: '¿Guardar los cambios?',
+
+                text: 'Se actualizará la información del producto. Las existencias actuales no serán modificadas.',
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Sí, guardar cambios',
+
+                cancelButtonText: 'Seguir editando',
+
+                confirmButtonColor: '#198754',
+
+                cancelButtonColor: '#6c757d',
+
+                reverseButtons: true,
+
+                allowOutsideClick: false
+
+            }).then(function (respuesta) {
+
+                if (!respuesta.isConfirmed) {
+                    return;
+                }
+
+                cambiosConfirmados = true;
+
+                const botonGuardar = formulario.querySelector(
+                    'button[type="submit"]'
+                );
+
+                if (botonGuardar) {
+
+                    botonGuardar.disabled = true;
+
+                    botonGuardar.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span> Guardando cambios...';
+
+                }
+
+                formulario.requestSubmit();
+
+            });
+
+        });
+
+    }
+
+});
+
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

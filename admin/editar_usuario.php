@@ -47,7 +47,8 @@ if (
         'El identificador del usuario no es valido.'
     );
 
-    redirigir('admin/usuarios.php');
+    header('Location: ' . urlSistema('inventario/index.php'));
+    exit;
 
 }
 
@@ -91,7 +92,8 @@ if (!$usuarioBD) {
         'El usuario solicitado no existe.'
     );
 
-    redirigir('admin/usuarios.php');
+    header('Location: ' . urlSistema('admin/usuarios.php'));
+    exit;
 
 }
 
@@ -419,7 +421,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'La informacion del usuario fue actualizada correctamente.'
             );
 
-            redirigir('admin/usuarios.php');
+            header('Location: ' . urlSistema('admin/usuarios.php'));
+            exit;
 
 
         } catch (DomainException $e) {
